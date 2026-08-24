@@ -4,10 +4,13 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+const connectDB = require('./config/connectDB.js');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+connectDB();
 
 // Health Check Route
 app.get('/', (req, res) => {
