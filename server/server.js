@@ -1,12 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const http = require('http');
 
 dotenv.config();
 
 const connectDB = require('./config/connectDB.js');
+const { initializeSocket } = require('./config/socket.js');
 
 const app = express();
+
+const httpServer = http.createServer(app);
+initializeSocket(httpServer);
 
 app.use(cors());
 app.use(express.json());
@@ -14,7 +19,7 @@ connectDB();
 
 // Health Check Route
 app.get('/', (req, res) => {
-    res.send('API is running successfully...');
+  res.send('API is running successfully...');
 });
 
 // Database Connection & Server Startup
