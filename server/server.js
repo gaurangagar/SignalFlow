@@ -28,3 +28,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
+
+const emailWorker = require('./workers/email.worker.js');
+const fanoutWorker = require('./workers/fanout.worker.js');
+const inappWorker = require('./workers/inapp.worker.js');
