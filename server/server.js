@@ -25,10 +25,22 @@ app.get('/', (req, res) => {
 // Database Connection & Server Startup
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`)
-})
+httpServer.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
-const emailWorker = require('./workers/email.worker.js');
-const fanoutWorker = require('./workers/fanout.worker.js');
-const inappWorker = require('./workers/inapp.worker.js');
+// Workers
+require('./workers/email.worker.js');
+require('./workers/fanout.worker.js');
+require('./workers/inapp.worker.js');
+
+const analyticsRoutes = require('./routes/analytics.routes.js');
+const authRoutes = require('./routes/auth.route.js');
+const notificationRoutes = require('./routes/notification.routes.js');
+const userRoutes = require('./routes/user.route.js');
+
+// Routes
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/users", userRoutes);
