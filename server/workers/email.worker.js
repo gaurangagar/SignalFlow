@@ -1,6 +1,6 @@
 const { Worker } = require("bullmq");
 const redisConnection = require("../config/ioredis");
-const sendEmail = require("../config/nodemailer");
+const sendEmail = require("../config/resend");
 const User = require("../models/user.model");
 const Delivery = require("../models/delivery.model");
 

@@ -34,9 +34,9 @@ require('./workers/email.worker.js');
 require('./workers/fanout.worker.js');
 require('./workers/inapp.worker.js');
 
-const analyticsRoutes = require('./routes/analytics.routes.js');
+const analyticsRoutes = require('./routes/analytics.route.js');
 const authRoutes = require('./routes/auth.route.js');
-const notificationRoutes = require('./routes/notification.routes.js');
+const notificationRoutes = require('./routes/notification.route.js');
 const userRoutes = require('./routes/user.route.js');
 
 // Routes

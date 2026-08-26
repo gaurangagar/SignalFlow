@@ -2,7 +2,7 @@ const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const sendEmail = require('../config/resend');
 
 const register = async (req, res) => {
     try {
@@ -204,8 +204,8 @@ const forgotPassword = async (req, res) => {
         // Create reset URL
         const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password?token=${resetToken}`;
 
-        // Send email (or log to console in dev mode if SMTP is not configured)
-        if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        // Send email (or log to console in dev mode if RESEND_API_KEY is not configured)
+        if (!process.env.RESEND_API_KEY) {
             console.log("\n====== DEVELOPMENT MODE PASSWORD RESET ======");
             console.log(`User Email: ${email}`);
             console.log(`Reset Token: ${resetToken}`);
@@ -214,36 +214,21 @@ const forgotPassword = async (req, res) => {
 
             return res.status(200).json({
                 success: true,
-                message: "Reset link generated. In development (no SMTP configured), check server console for the token.",
+                message: "Reset link generated. In development (no RESEND_API_KEY configured), check server console for the token.",
                 token: resetToken
             });
         }
 
-        // Configure Nodemailer transporter
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
-
-        const message = {
-            from: `${process.env.FROM_NAME || 'SignalFlow Support'} <${process.env.FROM_EMAIL || 'noreply@signalflow.com'}>`,
-            to: user.email,
-            subject: 'SignalFlow Password Reset Request',
-            text: `You are receiving this email because you (or someone else) have requested the reset of a password. Please click on the following link, or paste this into your browser to complete the process within 10 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.`
-        };
+        const textContent = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click on the following link, or paste this into your browser to complete the process within 10 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.`;
 
         try {
-            await transporter.sendMail(message);
+            await sendEmail(user.email, 'SignalFlow Password Reset Request', null, textContent);
             res.status(200).json({
                 success: true,
                 message: "Email sent successfully"
             });
         } catch (mailError) {
-            console.error("Nodemailer Error:", mailError);
+            console.error("Resend Error:", mailError);
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
             await user.save();
