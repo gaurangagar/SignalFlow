@@ -11,7 +11,17 @@ export const useSocket = (userId) => {
     useEffect(() => {
         if (!userId) return;
 
-        const socketInstance = io(SOCKET_URL);
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+        const socketInstance = io(SOCKET_URL, {
+            auth: {
+                token,
+            },
+        });
+
+        socketInstance.on("connect_error", (err) => {
+            console.error("❌ WebSocket Connection Error:", err.message);
+        });
 
         socketInstance.on("connect", async () => {
             setIsConnected(true);

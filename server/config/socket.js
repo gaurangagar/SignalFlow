@@ -1,4 +1,6 @@
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
+const User = require("../models/user.model");
 
 let io = null;
 
@@ -11,24 +13,77 @@ const initializeSocket = (server) => {
         },
     });
 
-    io.on("connection", (socket) => {
-        console.log(`🔌 Socket connected: ${socket.id}`);
+    // Authenticate socket connections using JWT
+    io.use(async (socket, next) => {
+        try {
+            let token = socket.handshake.auth?.token;
 
-        // Register the connected user
+            if (!token && socket.handshake.headers?.authorization) {
+                const authHeader = socket.handshake.headers.authorization;
+                if (authHeader.startsWith("Bearer ")) {
+                    token = authHeader.split(" ")[1];
+                } else {
+                    token = authHeader;
+                }
+            }
+
+            if (!token && socket.handshake.query?.token) {
+                token = socket.handshake.query.token;
+            }
+
+            if (!token) {
+                return next(new Error("Authentication error: Token required"));
+            }
+
+            const decoded = jwt.verify(
+                token,
+                process.env.JWT_SECRET || "default_jwt_secret_key_change_me"
+            );
+
+            const user = await User.findById(decoded.id);
+            if (!user) {
+                return next(new Error("Authentication error: User not found"));
+            }
+
+            socket.user = user;
+            socket.userId = user._id.toString();
+
+            next();
+        } catch (error) {
+            console.error("Socket authentication failed:", error.message);
+            return next(new Error("Authentication error: Invalid or expired token"));
+        }
+    });
+
+    io.on("connection", (socket) => {
+        const verifiedUserId = socket.userId;
+        console.log(`🔌 Socket connected: ${socket.id} (Authenticated User: ${verifiedUserId})`);
+
+        // Automatically join the verified user's private notification room
+        const room = `user:${verifiedUserId}`;
+        socket.join(room);
+        console.log(`👤 User ${verifiedUserId} joined room ${room}`);
+
+        // Register event handler with strict ownership validation
         socket.on("register", (userId) => {
             if (!userId) {
                 console.log(`⚠️ No userId provided for socket ${socket.id}`);
                 return;
             }
 
-            const room = `user:${userId}`;
+            // Prevent registering as any user other than the authenticated identity
+            if (userId.toString() !== verifiedUserId) {
+                console.warn(
+                    `🚨 Unauthorized socket registration attempt: Socket ${socket.id} (${verifiedUserId}) tried to register as ${userId}`
+                );
+                socket.emit("error", {
+                    message: "Forbidden: You cannot register or listen to another user's notifications",
+                });
+                return;
+            }
 
             socket.join(room);
-
-            // Store userId on socket for disconnect logging
-            socket.userId = userId;
-
-            console.log(`👤 User ${userId} registered on socket ${socket.id}`);
+            console.log(`👤 Verified user ${verifiedUserId} registered on socket ${socket.id}`);
         });
 
         socket.on("disconnect", (reason) => {
