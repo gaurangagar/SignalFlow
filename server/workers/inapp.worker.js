@@ -71,7 +71,7 @@ const inappWorker = new Worker(
       if (eventId) {
         await Delivery.findOneAndUpdate(
           { eventId: eventId, userId: userId, channel: "inApp" },
-          { status: "success", sentAt: new Date() }
+          { status: "success", sentAt: new Date(), attempts: job.attemptsMade + 1 }
         );
       }
 
@@ -79,20 +79,28 @@ const inappWorker = new Worker(
         `✅ In-App Worker: Alert saved and tracked for User ID ${userId}`
       );
     } catch (error) {
+      const isLastAttempt = job.attemptsMade + 1 >= job.opts.attempts;
+
       console.error(
-        `❌ In-App Worker Failed for User ID ${userId}:`,
+        `❌ In-App Worker failed for User ID ${userId} (attempt ${job.attemptsMade + 1}/${job.opts.attempts}):`,
         error.message
       );
 
-      // 4. Mark the Dashboard Receipt as FAILED if something crashes
-      if (eventId) {
+      // Only mark Delivery as 'failed' on the last attempt
+      if (eventId && isLastAttempt) {
         await Delivery.findOneAndUpdate(
           { eventId: eventId, userId: userId, channel: "inApp" },
           {
             status: "failed",
             errorMessage: error.message,
             faultType: "INAPP_SAVE_ERROR",
+            attempts: job.attemptsMade + 1,
           }
+        );
+      } else if (eventId) {
+        await Delivery.findOneAndUpdate(
+          { eventId: eventId, userId: userId, channel: "inApp" },
+          { attempts: job.attemptsMade + 1 }
         );
       }
       throw error;

@@ -14,6 +14,6 @@ const emailQueue = new Queue("email-queue", {
     },
 });
 
-console.log('📦 BullMQ "email-queue" is ready for rate-limited email delivery!');
+console.log('📦 BullMQ "email-queue" ready (attempts: 3, exponential backoff: 2s).');
 
 module.exports = emailQueue;

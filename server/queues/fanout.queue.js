@@ -14,6 +14,6 @@ const fanoutQueue = new Queue("fanout-queue", {
     },
 });
 
-console.log('📦 BullMQ "fanout-queue" is ready for rate-limited fanout delivery!');
+console.log('📦 BullMQ "fanout-queue" ready (attempts: 3, exponential backoff: 2s).');
 
 module.exports = fanoutQueue;

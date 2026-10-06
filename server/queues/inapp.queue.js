@@ -14,6 +14,6 @@ const inAppQueue = new Queue("inapp-queue", {
     },
 });
 
-console.log('📦 BullMQ "inapp-queue" is ready for rate-limited in-app notifications!');
+console.log('📦 BullMQ "inapp-queue" ready (attempts: 3, exponential backoff: 2s).');
 
 module.exports = inAppQueue;

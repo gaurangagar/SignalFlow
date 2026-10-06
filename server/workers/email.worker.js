@@ -58,26 +58,47 @@ const emailWorker = new Worker(
             if (eventId) {
                 await Delivery.findOneAndUpdate(
                     { eventId: eventId, userId: user._id, channel: "email" },
-                    { status: "success", sentAt: new Date() },
+                    { status: "success", sentAt: new Date(), attempts: job.attemptsMade + 1 },
                 );
             }
         } catch (error) {
-            console.error('Email worker failed:', error.message);
+            const isLastAttempt = job.attemptsMade + 1 >= job.opts.attempts;
 
-            if (eventId) {
+            console.error(
+                `❌ Email Worker failed for ${user.email} (attempt ${job.attemptsMade + 1}/${job.opts.attempts}):`,
+                error.message
+            );
+
+            // Only persist the final failure to Delivery so intermediate retries
+            // don't prematurely flip the record to 'failed'.
+            if (eventId && isLastAttempt) {
                 await Delivery.findOneAndUpdate(
                     { eventId: eventId, userId: user._id, channel: "email" },
                     {
                         status: "failed",
                         errorMessage: error.message,
                         faultType: "DELIVERY_FAILURE",
+                        attempts: job.attemptsMade + 1,
                     },
                 );
+            } else if (eventId) {
+                // Keep the record in 'pending' and track attempt count during retries
+                await Delivery.findOneAndUpdate(
+                    { eventId: eventId, userId: user._id, channel: "email" },
+                    { attempts: job.attemptsMade + 1 },
+                );
             }
+
+            // Re-throw so BullMQ marks the job as failed and triggers the backoff retry.
+            throw error;
         }
 
     },
     { connection: redisConnection },
 );
 
-module.exports=emailWorker;
+emailWorker.on("failed", (job, err) => {
+    console.error(`❌ [Email Worker] Job ${job?.id} failed:`, err.message);
+});
+
+module.exports = emailWorker;

@@ -23,46 +23,65 @@ const fanoutWorker = new Worker(
                 continue;
             }
 
+            const userIdStr = follower.userId.toString();
+
             if (follower.channels.includes("email")) {
-                try {
-                    if (eventId) {
+                if (eventId) {
+                    try {
+                        // $setOnInsert ensures we never overwrite an existing delivery
+                        // record (e.g. one already marked 'success' or 'failed' by a
+                        // previous attempt). The upsert is a no-op when the row exists.
                         await Delivery.findOneAndUpdate(
-                            { eventId: eventId, userId: follower.userId, channel: "email" },
-                            { status: "pending", attempts: 0 },
+                            { eventId, userId: follower.userId, channel: "email" },
+                            { $setOnInsert: { status: "pending", attempts: 0 } },
                             { upsert: true, new: true }
                         );
+                    } catch (error) {
+                        // Duplicate-key on a race is safe to ignore; the row already exists.
+                        if (error.code !== 11000) {
+                            console.error("Fanout: email Delivery upsert failed", error.message);
+                        }
                     }
-                } catch (error) {
-                    console.error("Email delivery failed", error);
                 }
 
-                await emailQueue.add("send-email", {
-                    eventId,
-                    userId: follower.userId,
-                    type,
-                    payload
-                });
+                // Deterministic jobId: BullMQ silently discards a duplicate add when a
+                // job with the same ID is already queued or processing, making fanout
+                // retries safe against double-sending.
+                const emailJobId = eventId
+                    ? `email:${eventId}:${userIdStr}`
+                    : undefined;
+
+                await emailQueue.add(
+                    "send-email",
+                    { eventId, userId: follower.userId, type, payload },
+                    { jobId: emailJobId }
+                );
             }
 
-            if (follower.channels.includes('inApp')) {
-                try {
-                    if (eventId) {
+            if (follower.channels.includes("inApp")) {
+                if (eventId) {
+                    try {
                         await Delivery.findOneAndUpdate(
-                            { eventId: eventId, userId: follower.userId, channel: "inApp" },
-                            { status: "pending", attempts: 0 },
-                            { upsert: true, new: true },
+                            { eventId, userId: follower.userId, channel: "inApp" },
+                            { $setOnInsert: { status: "pending", attempts: 0 } },
+                            { upsert: true, new: true }
                         );
+                    } catch (error) {
+                        if (error.code !== 11000) {
+                            console.error("Fanout: inApp Delivery upsert failed", error.message);
+                        }
                     }
-                } catch (error) {
-                    console.error("In-App delivery failed", error);
                 }
 
-                await inAppQueue.add("send-inapp", {
-                    eventId,
-                    userId: follower.userId,
-                    type,
-                    payload,
-                });
+                const inAppJobId = eventId
+                    ? `inapp:${eventId}:${userIdStr}`
+                    : undefined;
+
+                await inAppQueue.add(
+                    "send-inapp",
+                    { eventId, userId: follower.userId, type, payload },
+                    { jobId: inAppJobId }
+                );
             }
         }
     },
@@ -73,4 +92,4 @@ fanoutWorker.on("failed", (job, err) => {
     console.error(`❌ [Fanout Worker] Job ${job?.id} failed:`, err.message);
 });
 
-module.exports=fanoutWorker;
+module.exports = fanoutWorker;
