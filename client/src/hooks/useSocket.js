@@ -35,8 +35,9 @@ export const useSocket = (userId) => {
             try {
                 console.log("🔄 Syncing latest notifications from database...");
                 const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+                // Route is GET /api/notifications/:userId/notifications
                 const response = await fetch(
-                    `${SOCKET_URL}/api/notifications/${userId}`,
+                    `${SOCKET_URL}/api/notifications/${userId}/notifications`,
                     {
                         headers: {
                             ...(token ? { Authorization: `Bearer ${token}` } : {}),

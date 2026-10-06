@@ -32,9 +32,9 @@ export const triggerTestEvent = (payload) =>
 export const fetchUsers = () => api.get("/users");
 export const updateWatchlist = (
   userId,
-  productId,
+  topicId,
   channel,
-) => api.patch(`/users/${userId}/watchlist`, { productId, channel });
+) => api.patch(`/users/${userId}/watchlist`, { topicId, channel });
 
 export const loginUser = (email, password) =>
   api.post("/auth/login", { email, password });
