@@ -27,7 +27,8 @@ api.interceptors.response.use(
 export const fetchMetrics = () => api.get("/analytics");
 export const fetchFailures = () => api.get("/analytics/failures");
 export const retryDelivery = (id) => api.post(`/analytics/retry/${id}`);
-export const triggerTestEvent = (payload) => api.post("/events", payload);
+export const triggerTestEvent = (payload) =>
+  api.post("/notifications/trigger-event", payload);
 export const fetchUsers = () => api.get("/users");
 export const updateWatchlist = (
   userId,
@@ -43,5 +44,5 @@ export const fetchCurrentUser = () => api.get("/auth/me");
 
 // GOD MODE: Arm all notifications for the Master User
 export const armMasterUser = async (userId, productIds) => {
-  return axios.post(`${API_URL}/users/${userId}/arm-all`, { productIds });
-};
+  return api.post(`/users/${userId}/arm-all`, { productIds });
+};

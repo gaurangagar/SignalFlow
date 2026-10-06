@@ -7,14 +7,20 @@ const {
     createTopic,
     clearNotifications
 } = require('../controllers/notification.controller');
+const protect = require('../middleware/auth.middleware');
+const checkOwnership = require('../middleware/ownership.middleware');
 
 const router = express.Router();
 
-router.post('/trigger-event', triggerEvent);
-router.get('/:userId/notifications', getNotifications);
-router.post('/:userId/follow/:topicId', followTopic);
-router.post('/:userId/unfollow/:topicId', unfollowTopic);
-router.post('/create-topic', createTopic);
-router.delete('/:userId/clear-notifications', clearNotifications);
+// Event & Topic endpoints (Protected)
+router.post('/trigger-event', protect, triggerEvent);
+router.post('/create-topic', protect, createTopic);
 
-module.exports = router;
+// User-scoped notification & subscription endpoints (Protected + Ownership verification)
+router.get('/:userId/notifications', protect, checkOwnership, getNotifications);
+router.get('/:userId', protect, checkOwnership, getNotifications);
+router.post('/:userId/follow/:topicId', protect, checkOwnership, followTopic);
+router.post('/:userId/unfollow/:topicId', protect, checkOwnership, unfollowTopic);
+router.delete('/:userId/clear-notifications', protect, checkOwnership, clearNotifications);
+
+module.exports = router;

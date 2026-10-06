@@ -9,8 +9,8 @@ const sendEmail = async (to, subject, htmlContent, textContent) => {
     const fromName = process.env.FROM_NAME || "SignalFlow Alerts";
 
     const emailOptions = {
-      from: 'Acme <onboarding@resend.dev>',
-      to: 'delivered@resend.dev',
+      from: process.env.FROM_EMAIL || 'SignalFlow <onboarding@resend.dev>',
+      to: to || 'delivered@resend.dev',
       subject,
     };
 

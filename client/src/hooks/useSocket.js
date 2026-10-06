@@ -24,9 +24,14 @@ export const useSocket = (userId) => {
             // If the user's Wi-Fi dropped, fetch what they missed while offline.
             try {
                 console.log("🔄 Syncing latest notifications from database...");
-                // Assumes you have a basic GET route like /api/notifications/:userId or similar
+                const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
                 const response = await fetch(
                     `${SOCKET_URL}/api/notifications/${userId}`,
+                    {
+                        headers: {
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
+                    }
                 );
 
                 if (response.ok) {

@@ -5,6 +5,14 @@ const getSubscriptions = async (req, res) => {
     try {
         const { userId } = req.params;
 
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to access these subscriptions"
+            });
+        }
+
         // Check if user exists
         const user = await User.findById(userId);
         if (!user) {
@@ -53,6 +61,15 @@ const getUsers = async (req, res) => {
 const getUserById = async (req, res) => {
     try {
         const { userId } = req.params;
+
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to access this user profile"
+            });
+        }
+
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
@@ -83,6 +100,14 @@ const toggleWatchlist = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Please provide a topicId"
+            });
+        }
+
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to modify this user's watchlist"
             });
         }
 
@@ -133,6 +158,14 @@ const toggleWatchlist = async (req, res) => {
 const armAll = async (req, res) => {
     try {
         const { userId } = req.params;
+
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to arm channels for this user"
+            });
+        }
 
         // Check if user exists
         const user = await User.findById(userId);

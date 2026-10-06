@@ -17,14 +17,12 @@ const triggerEvent = async (req, res) => {
             });
         }
 
-        // Verify that the topic exists
-        const topic = await Topic.findOne({ name: topicId });
+        // Verify that the topic exists (or auto-create if not yet registered)
+        let topic = await Topic.findOne({ name: topicId });
         if (!topic) {
-            return res.status(404).json({
-                success: false,
-                message: `Topic '${topicId}' does not exist. Please create it first.`
-            });
+            topic = await Topic.create({ name: topicId });
         }
+
 
         // 1. Create the event record in the database
         const event = await Event.create({
@@ -62,6 +60,14 @@ const getNotifications = async (req, res) => {
     try {
         const { userId } = req.params;
 
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to view these notifications"
+            });
+        }
+
         // Check if user exists
         const user = await User.findById(userId);
         if (!user) {
@@ -95,6 +101,14 @@ const followTopic = async (req, res) => {
     try {
         const { userId, topicId } = req.params;
         const { channels } = req.body;
+
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to modify subscriptions for this user"
+            });
+        }
 
         // Check if user exists
         const user = await User.findById(userId);
@@ -153,6 +167,14 @@ const followTopic = async (req, res) => {
 const unfollowTopic = async (req, res) => {
     try {
         const { userId, topicId } = req.params;
+
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to modify subscriptions for this user"
+            });
+        }
 
         // Find the topic by name or ID
         const query = { $or: [{ name: topicId }] };
@@ -226,6 +248,14 @@ const createTopic = async (req, res) => {
 const clearNotifications = async (req, res) => {
     try {
         const { userId } = req.params;
+
+        // Check ownership if user object is present on request
+        if (req.user && req.user._id.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Forbidden: You do not have permission to clear notifications for this user"
+            });
+        }
 
         // Check if user exists
         const user = await User.findById(userId);

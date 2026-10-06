@@ -51,4 +51,10 @@ const protect = async (req, res, next) => {
     }
 };
 
+protect.protect = protect;
+const checkOwnership = require("./ownership.middleware");
+protect.checkOwnership = checkOwnership;
+
 module.exports = protect;
+module.exports.protect = protect;
+module.exports.checkOwnership = checkOwnership;

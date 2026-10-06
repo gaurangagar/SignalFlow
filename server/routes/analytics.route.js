@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const protect = require("../middleware/auth.middleware");
 
 const {
   getSystemMetrics,
@@ -8,6 +9,9 @@ const {
 } = require("../controllers/analytics.controller");
 
 const router = Router();
+
+// Protect all analytics endpoints with JWT authentication
+router.use(protect);
 
 /**
  * GET /api/analytics
@@ -30,9 +34,7 @@ router.post("/retry/:id", retryFailedDelivery);
 /**
  * DELETE /api/analytics/nuke
  * Clear delivery/event data
- *
- * Protect this route with admin middleware in production.
  */
 router.delete("/nuke", clearAnalyticsData);
 
-module.exports = router;
+module.exports = router;
