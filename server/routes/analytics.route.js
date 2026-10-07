@@ -11,6 +11,7 @@ const {
 const router = Router();
 
 router.use(protect);
+router.use(adminOnly);
 
 router.get("/", getSystemMetrics);
 
@@ -18,6 +19,6 @@ router.get("/failures", getFailedDeliveries);
 
 router.post("/retry/:id", retryFailedDelivery);
 
-router.delete("/nuke", adminOnly, clearAnalyticsData);
+router.delete("/nuke", clearAnalyticsData);
 
 module.exports = router;

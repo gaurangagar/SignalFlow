@@ -35,6 +35,12 @@ const NotificationSchema = new mongoose.Schema(
 // Index for faster user notification queries
 NotificationSchema.index({ userId: 1 });
 
+// Prevent duplicate notifications for the same user and event
+NotificationSchema.index(
+  { userId: 1, eventId: 1 },
+  { unique: true }
+);
+
 // Automatically delete notifications after 30 days
 NotificationSchema.index(
   { createdAt: 1 },

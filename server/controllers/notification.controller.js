@@ -24,28 +24,37 @@ const triggerEvent = async (req, res) => {
         }
 
 
-        // 1. Create the event record in the database
-        const event = await Event.create({
-            topicId,
-            type,
-            payload
-        });
+        let event = null;
+        try {
+            // 1. Create the event record in the database
+            event = await Event.create({
+                topicId,
+                type,
+                payload
+            });
 
-        // 2. Queue the fanout task in BullMQ
-        await fanoutQueue.add("fanout-event", {
-            eventId: event._id,
-            topicId,
-            type,
-            payload
-        });
+            // 2. Queue the fanout task in BullMQ
+            await fanoutQueue.add("fanout-event", {
+                eventId: event._id,
+                topicId,
+                type,
+                payload
+            });
 
-        console.log(`📢 Event '${type}' triggered for topic '${topicId}' (ID: ${event._id})`);
+            console.log(`📢 Event '${type}' triggered for topic '${topicId}' (ID: ${event._id})`);
 
-        res.status(201).json({
-            success: true,
-            message: "Event triggered successfully, queued for fanout",
-            event
-        });
+            res.status(201).json({
+                success: true,
+                message: "Event triggered successfully, queued for fanout",
+                event
+            });
+        } catch (queueErr) {
+            // Rollback: if Redis is down or queueing fails, delete the saved event so it's not orphaned
+            if (event?._id) {
+                await Event.findByIdAndDelete(event._id);
+            }
+            throw queueErr;
+        }
     } catch (error) {
         console.error("TriggerEvent Error:", error);
         res.status(500).json({

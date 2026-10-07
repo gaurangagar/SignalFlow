@@ -8,13 +8,14 @@ const {
     clearNotifications
 } = require('../controllers/notification.controller');
 const protect = require('../middleware/auth.middleware');
+const adminOnly = require('../middleware/admin.middleware');
 const checkOwnership = require('../middleware/ownership.middleware');
 
 const router = Router();
 
-// Event & Topic endpoints (Protected)
-router.post('/trigger-event', protect, triggerEvent);
-router.post('/create-topic', protect, createTopic);
+// Event & Topic endpoints (Protected + Admin only)
+router.post('/trigger-event', protect, adminOnly, triggerEvent);
+router.post('/create-topic', protect, adminOnly, createTopic);
 
 // User-scoped notification & subscription endpoints (Protected + Ownership verification)
 router.get('/:userId/notifications', protect, checkOwnership, getNotifications);

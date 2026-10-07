@@ -36,17 +36,36 @@ const inappWorker = new Worker(
       // Safely extract the product details
       const productName = payload?.productName || "An item on your watchlist";
       const newPrice = payload?.newPrice || "a new low price";
+      const alertMessage =
+        job.data.message || `Price Drop Alert: ${productName} is now $${newPrice}!`;
 
       let newNotification = null;
 
-      // 1. Create the actual Notification document so it shows up in the user's UI (bell icon)
+      // 1. Idempotently create or retrieve the Notification document so retries don't create duplicates
       if (eventId) {
-        newNotification = await Notification.create({
-          userId: userId,
-          eventId: eventId,
-          message: `Price Drop Alert: ${productName} is now $${newPrice}!`,
-          read: false,
-        });
+        try {
+          newNotification = await Notification.findOneAndUpdate(
+            { userId: userId, eventId: eventId },
+            {
+              $setOnInsert: {
+                userId: userId,
+                eventId: eventId,
+                message: alertMessage,
+                read: false,
+              },
+            },
+            { upsert: true, new: true }
+          );
+        } catch (dbErr) {
+          if (dbErr.code === 11000) {
+            newNotification = await Notification.findOne({
+              userId: userId,
+              eventId: eventId,
+            });
+          } else {
+            throw dbErr;
+          }
+        }
       }
 
       // 2. ⚡ THE REAL-TIME MAGIC: Emit via Socket.io to the React Frontend!
@@ -54,7 +73,7 @@ const inappWorker = new Worker(
         const io = getIO();
         // NOTE: In config/socket.js, users join room: `user:${userId}`
         io.to(`user:${userId}`).emit("notification", {
-          message: `Price Drop Alert: ${productName} is now $${newPrice}!`,
+          message: alertMessage,
           notification: newNotification,
         });
         console.log(

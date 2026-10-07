@@ -49,7 +49,8 @@ const register = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                isAdmin: user.isAdmin || false
             }
         });
     } catch (error) {
@@ -113,7 +114,8 @@ const login = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                isAdmin: user.isAdmin || false
             }
         });
     } catch (error) {
@@ -143,7 +145,8 @@ const getMe = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                isAdmin: user.isAdmin || false
             }
         });
     } catch (error) {
@@ -185,8 +188,9 @@ const forgotPassword = async (req, res) => {
 
         await user.save();
 
-        // Create reset URL
-        const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password?token=${resetToken}`;
+        // Create reset URL pointing to the client app
+        const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
 
         const textContent = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click on the following link, or paste this into your browser to complete the process within 10 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.`;
 
