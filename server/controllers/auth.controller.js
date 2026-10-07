@@ -39,7 +39,7 @@ const register = async (req, res) => {
         // Generate JWT token
         const token = jwt.sign(
             { id: user._id },
-            process.env.JWT_SECRET || "default_jwt_secret_key_change_me",
+            process.env.JWT_SECRET,
             { expiresIn: '30d' }
         );
 
@@ -103,7 +103,7 @@ const login = async (req, res) => {
         // Generate JWT token
         const token = jwt.sign(
             { id: user._id },
-            process.env.JWT_SECRET || "default_jwt_secret_key_change_me",
+            process.env.JWT_SECRET,
             { expiresIn: '30d' }
         );
 
@@ -128,29 +128,13 @@ const login = async (req, res) => {
 
 const getMe = async (req, res) => {
     try {
-        let token;
+        // req.user is already set by the 'protect' middleware
+        const user = req.user;
 
-        // Check for token in Authorization header
-        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            token = req.headers.authorization.split(' ')[1];
-        }
-
-        if (!token) {
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: "Not authorized, token required"
-            });
-        }
-
-        // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_jwt_secret_key_change_me");
-
-        // Get user from DB
-        const user = await User.findById(decoded.id);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
             });
         }
 
@@ -204,28 +188,13 @@ const forgotPassword = async (req, res) => {
         // Create reset URL
         const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password?token=${resetToken}`;
 
-        // Send email (or log to console in dev mode if RESEND_API_KEY is not configured)
-        if (!process.env.RESEND_API_KEY) {
-            console.log("\n====== DEVELOPMENT MODE PASSWORD RESET ======");
-            console.log(`User Email: ${email}`);
-            console.log(`Reset Token: ${resetToken}`);
-            console.log(`Reset URL: ${resetUrl}`);
-            console.log("=============================================\n");
-
-            return res.status(200).json({
-                success: true,
-                message: "Reset link generated. In development (no RESEND_API_KEY configured), check server console for the token.",
-                token: resetToken
-            });
-        }
-
         const textContent = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click on the following link, or paste this into your browser to complete the process within 10 minutes:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email.`;
 
         try {
             await sendEmail(user.email, 'SignalFlow Password Reset Request', null, textContent);
             res.status(200).json({
                 success: true,
-                message: "Email sent successfully"
+                message: "If an account with that email exists, a password reset link has been sent."
             });
         } catch (mailError) {
             console.error("Resend Error:", mailError);
@@ -235,8 +204,7 @@ const forgotPassword = async (req, res) => {
 
             return res.status(500).json({
                 success: false,
-                message: "Email could not be sent",
-                error: mailError.message
+                message: "Email could not be sent. Please try again later."
             });
         }
 
@@ -298,7 +266,7 @@ const resetPassword = async (req, res) => {
         // Generate new JWT token
         const jwtToken = jwt.sign(
             { id: user._id },
-            process.env.JWT_SECRET || "default_jwt_secret_key_change_me",
+            process.env.JWT_SECRET,
             { expiresIn: '30d' }
         );
 

@@ -1,5 +1,4 @@
-const express = require("express");
-
+const { Router } = require('express');
 const {
     register,
     login,
@@ -7,10 +6,9 @@ const {
     forgotPassword,
     resetPassword
 } = require("../controllers/auth.controller");
-
 const protect = require("../middleware/auth.middleware");
 
-const router = express.Router();
+const router = Router();
 
 router.post("/signup", register);
 

@@ -24,7 +24,7 @@ const protect = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET || "default_jwt_secret_key_change_me"
+            process.env.JWT_SECRET
         );
 
         // Find user
@@ -51,10 +51,4 @@ const protect = async (req, res, next) => {
     }
 };
 
-protect.protect = protect;
-const checkOwnership = require("./ownership.middleware");
-protect.checkOwnership = checkOwnership;
-
 module.exports = protect;
-module.exports.protect = protect;
-module.exports.checkOwnership = checkOwnership;

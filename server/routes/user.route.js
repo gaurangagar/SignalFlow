@@ -1,5 +1,4 @@
-const express = require("express");
-
+const { Router } = require("express");
 const {
   getSubscriptions,
   getUsers,
@@ -7,11 +6,10 @@ const {
   toggleWatchlist,
   armAll,
 } = require("../controllers/user.controller");
-
 const protect = require("../middleware/auth.middleware");
 const checkOwnership = require("../middleware/ownership.middleware");
 
-const router = express.Router();
+const router = Router();
 
 router.get("/", protect, getUsers);
 
@@ -33,4 +31,4 @@ router.post(
   armAll
 );
 
-module.exports = router;
+module.exports = router;

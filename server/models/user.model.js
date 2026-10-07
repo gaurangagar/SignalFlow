@@ -1,4 +1,4 @@
-const {mongoose}=require('mongoose')
+const mongoose = require('mongoose')
 
 const UserSchema = new mongoose.Schema(
   {
@@ -30,6 +30,11 @@ const UserSchema = new mongoose.Schema(
     resetPasswordExpire: {
       type: Date,
       select: false,
+    },
+
+    isAdmin: {
+      type: Boolean,
+      default: false,
     },
   },
   {

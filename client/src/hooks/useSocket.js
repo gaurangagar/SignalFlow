@@ -75,25 +75,25 @@ export const useSocket = (userId) => {
             );
         });
 
-        // 2. Catch EVERY real-time event the backend sends while online
-        socketInstance.onAny((eventName, ...args) => {
-            console.log(`📡 [Socket Listener] Caught Event: "${eventName}"`, args);
+        // 2. Catch ONLY real notification events the backend sends while online
+        socketInstance.on("notification", (data) => {
+            console.log(`📡 [Socket Listener] Caught notification event:`, data);
 
-            const data = args[0] || {};
+            const safeData = data || {};
 
-            // 3. Guarantee a 'message' property exists for Navbar.tsx to render
-            let alertText = data.message;
+            // 3. Guarantee a 'message' property exists for rendering
+            let alertText = safeData.message;
 
             // If it's a price drop, format a nice readable alert
-            if (!alertText && data.type === "price_drop" && data.payload) {
-                alertText = `🚨 Price Drop: ${data.payload.productName} is now $${data.payload.newPrice}!`;
+            if (!alertText && safeData.type === "price_drop" && safeData.payload) {
+                alertText = `🚨 Price Drop: ${safeData.payload.productName} is now $${safeData.payload.newPrice}!`;
             } else if (!alertText) {
                 alertText = "🔔 New Notification Received!";
             }
 
             // Construct the final object
             const formattedNotification = {
-                ...data,
+                ...safeData,
                 message: alertText,
             };
 
@@ -104,7 +104,7 @@ export const useSocket = (userId) => {
         setSocket(socketInstance);
 
         return () => {
-            socketInstance.offAny(); // Clean up the global listener
+            socketInstance.off("notification"); // Clean up the notification listener
             socketInstance.disconnect();
         };
     }, [userId]);

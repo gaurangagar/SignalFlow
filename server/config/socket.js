@@ -7,7 +7,7 @@ let io = null;
 const initializeSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: process.env.CLIENT_URL || "http://localhost:3000",
+            origin: process.env.CLIENT_URL || "http://localhost:5173",
             methods: ["GET", "POST"],
             credentials: true,
         },
@@ -37,7 +37,7 @@ const initializeSocket = (server) => {
 
             const decoded = jwt.verify(
                 token,
-                process.env.JWT_SECRET || "default_jwt_secret_key_change_me"
+                process.env.JWT_SECRET
             );
 
             const user = await User.findById(decoded.id);
