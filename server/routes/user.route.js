@@ -7,11 +7,12 @@ const {
   armAll,
 } = require("../controllers/user.controller");
 const protect = require("../middleware/auth.middleware");
+const adminOnly = require("../middleware/admin.middleware");
 const checkOwnership = require("../middleware/ownership.middleware");
 
 const router = Router();
 
-router.get("/", protect, getUsers);
+router.get("/", protect, adminOnly, getUsers);
 
 router.get("/:userId", protect, checkOwnership, getUserById);
 

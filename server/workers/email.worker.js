@@ -10,6 +10,21 @@ const emailWorker = new Worker(
         const { eventId, userId, subject, payload } = job.data;
         console.log(`📧 Email Worker: Picking up job for User ID ${userId}`);
 
+        if (eventId) {
+            const alreadyDelivered = await Delivery.exists({
+                eventId,
+                userId,
+                channel: "email",
+                status: "success",
+            });
+            if (alreadyDelivered) {
+                console.log(
+                    `⏭️ Email Worker: Delivery already marked success for event ${eventId}, user ${userId}. Skipping.`
+                );
+                return;
+            }
+        }
+
         const user = await User.findById(userId);
         if (!user) {
             console.error('user not found');

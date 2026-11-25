@@ -26,12 +26,13 @@ const fanoutWorker = new Worker(
             const userIdStr = follower.userId.toString();
 
             if (follower.channels.includes("email")) {
+                let emailDelivery = null;
                 if (eventId) {
                     try {
                         // $setOnInsert ensures we never overwrite an existing delivery
                         // record (e.g. one already marked 'success' or 'failed' by a
                         // previous attempt). The upsert is a no-op when the row exists.
-                        await Delivery.findOneAndUpdate(
+                        emailDelivery = await Delivery.findOneAndUpdate(
                             { eventId, userId: follower.userId, channel: "email" },
                             { $setOnInsert: { status: "pending", attempts: 0 } },
                             { upsert: true, new: true }
@@ -44,18 +45,19 @@ const fanoutWorker = new Worker(
                     }
                 }
 
-                // Deterministic jobId: BullMQ silently discards a duplicate add when a
-                // job with the same ID is already queued or processing, making fanout
-                // retries safe against double-sending.
-                const emailJobId = eventId
-                    ? `email:${eventId}:${userIdStr}`
-                    : undefined;
+                if (emailDelivery?.status !== "success") {
+                    // Deterministic jobId: BullMQ silently discards a duplicate add when a
+                    // job with the same ID is already queued, processing, or recently completed.
+                    const emailJobId = eventId
+                        ? `email:${eventId}:${userIdStr}`
+                        : undefined;
 
-                await emailQueue.add(
-                    "send-email",
-                    { eventId, userId: follower.userId, type, payload },
-                    { jobId: emailJobId }
-                );
+                    await emailQueue.add(
+                        "send-email",
+                        { eventId, userId: follower.userId, type, payload },
+                        { jobId: emailJobId }
+                    );
+                }
             }
 
             if (follower.channels.includes("inApp")) {

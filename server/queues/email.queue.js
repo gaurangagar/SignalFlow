@@ -9,7 +9,7 @@ const emailQueue = new Queue("email-queue", {
             type: "exponential",
             delay: 2000
         },
-        removeOnComplete: true,
+        removeOnComplete: { age: 3600, count: 1000 },
         removeOnFail: false,
     },
 });
